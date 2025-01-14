@@ -22,21 +22,16 @@ echo "User created and configured with username '$username' and password '$passw
 
 echo "Installing necessary packages"
 sudo apt update
-sudo apt install -y xfce4 desktop-base xfce4-terminal tightvncserver wget
+sudo apt install -y wget
+
+echo "Installing Original Ubuntu Desktop (GNOME)"
+sudo apt install -y ubuntu-desktop
 
 echo "Setting up Chrome Remote Desktop"
 echo "Installing Chrome Remote Desktop"
 wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 sudo dpkg --install chrome-remote-desktop_current_amd64.deb
 sudo apt install --assume-yes --fix-broken
-
-echo "Installing Desktop Environment"
-export DEBIAN_FRONTEND=noninteractive
-sudo apt install --assume-yes xfce4 desktop-base xfce4-terminal
-echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" | sudo tee /etc/chrome-remote-desktop-session
-sudo apt remove --assume-yes gnome-terminal
-sudo apt install --assume-yes xscreensaver
-sudo systemctl disable lightdm.service
 
 echo "Installing Google Chrome"
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
