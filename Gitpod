@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Variables
+username="gitpod"
+password="root"
+CRP=""
+Pin="123456"
+
+echo "Starting Chrome Remote Desktop Setup for Gitpod with KDE Plasma..."
+
+# Update and install necessary packages
+echo "Installing dependencies..."
+sudo apt update
+sudo apt install -y kde-plasma-desktop tightvncserver xvfb wget
+
+# Install Chrome Remote Desktop
+echo "Installing Chrome Remote Desktop..."
+wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+sudo dpkg -i chrome-remote-desktop_current_amd64.deb || sudo apt install -f -y
+echo "exec startplasma-x11" | sudo tee /etc/chrome-remote-desktop-session
+
+# Configure Chrome Remote Desktop
+echo "Configuring Chrome Remote Desktop..."
+sudo adduser "$username" chrome-remote-desktop
+
+# Set up X11 virtual framebuffer
+echo "Setting up X11 virtual framebuffer (Xvfb)..."
+Xvfb :99 -screen 0 1920x1080x24 &
+export DISPLAY=:99
+
+# Start KDE Plasma desktop environment
+echo "Starting KDE Plasma Desktop Environment..."
+startplasma-x11 &
+
+# Prompt user for CRP value
+read -p "Enter your Chrome Remote Desktop authentication code: " CRP
+
+# Finalize CRD setup
+echo "Finalizing Chrome Remote Desktop setup..."
+su - "$username" -c "/opt/google/chrome-remote-desktop/start-host --code=\"$CRP\" --redirect-url=\"https://remotedesktop.google.com/_/oauthredirect\" --name=$(hostname) --pin=$Pin"
+
+# Restart CRD service
+echo "Restarting Chrome Remote Desktop service..."
+sudo service chrome-remote-desktop restart
+
+echo "Setup complete! You can now connect using Chrome Remote Desktop."
+while true; do sleep 10; done
