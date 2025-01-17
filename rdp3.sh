@@ -22,7 +22,7 @@ echo "User created and configured with username '$username' and password '$passw
 
 echo "Installing necessary packages"
 sudo apt update
-sudo apt install -y ubuntu-desktop gnome-session gnome-terminal tightvncserver wget
+sudo apt install -y kde-plasma-desktop tightvncserver wget
 
 echo "Setting up Chrome Remote Desktop"
 echo "Installing Chrome Remote Desktop"
@@ -30,35 +30,13 @@ wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 sudo dpkg --install chrome-remote-desktop_current_amd64.deb
 sudo apt install --assume-yes --fix-broken
 
-echo "Installing Desktop Environment (GNOME)"
+echo "Installing KDE Plasma Desktop Environment"
 export DEBIAN_FRONTEND=noninteractive
-sudo apt install --assume-yes ubuntu-desktop gnome-session gnome-terminal
-echo "exec /etc/X11/Xsession /usr/bin/gnome-session" | sudo tee /etc/chrome-remote-desktop-session
+sudo apt install --assume-yes kde-plasma-desktop
+echo "exec startplasma-x11" | sudo tee /etc/chrome-remote-desktop-session
 sudo apt remove --assume-yes gnome-terminal
 sudo apt install --assume-yes xscreensaver
 sudo systemctl disable lightdm.service
-
-echo "Installing Gaming Dependencies"
-# Installing Steam for gaming
-sudo apt install -y steam
-
-# Installing Gamepad support (if you have a gamepad)
-sudo apt install -y jstest-gtk
-
-# Installing Wine for running Windows games
-sudo dpkg --add-architecture i386
-sudo apt update
-sudo apt install -y wine64 wine32
-
-# Installing Lutris for managing games
-sudo apt install -y lutris
-
-# Installing additional gaming dependencies
-sudo apt install -y libgl1-mesa-glx libvulkan1
-
-# Install Vulkan SDK (for Vulkan-based games)
-wget https://vulkan.lunarg.com/sdk/home#linux
-# You can add Vulkan installation steps here if needed.
 
 echo "Installing Google Chrome"
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
