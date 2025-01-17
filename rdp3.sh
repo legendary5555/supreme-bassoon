@@ -36,7 +36,7 @@ sudo apt install --assume-yes kde-plasma-desktop
 echo "exec startplasma-x11" | sudo tee /etc/chrome-remote-desktop-session
 sudo apt remove --assume-yes gnome-terminal
 sudo apt install --assume-yes xscreensaver
-sudo systemctl disable lightdm.service
+sudo service lightdm stop  # Replaces systemctl disable lightdm.service
 
 echo "Installing Google Chrome"
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
