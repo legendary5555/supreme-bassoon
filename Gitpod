@@ -1,47 +1,65 @@
 #!/bin/bash
 
-# Variables
-username="gitpod"
+# Set default username and password
+username="user"
 password="root"
+
+# Set default CRP value
 CRP=""
+
+# Set default Pin value
 Pin="123456"
 
-echo "Starting Chrome Remote Desktop Setup for Gitpod with KDE Plasma..."
+# Set default Autostart value
+Autostart=true
 
-# Update and install necessary packages
-echo "Installing dependencies..."
+echo "Creating User and Setting it up"
+sudo useradd -m "$username"
+sudo adduser "$username" sudo
+echo "$username:$password" | sudo chpasswd
+sudo sed -i 's/\/bin\/sh/\/bin\/bash/g' /etc/passwd
+echo "User created and configured with username '$username' and password '$password'"
+
+echo "Installing necessary packages"
 sudo apt update
-sudo apt install -y kde-plasma-desktop tightvncserver xvfb wget
+sudo apt install -y gnome-core gnome-terminal tightvncserver wget
 
-# Install Chrome Remote Desktop
-echo "Installing Chrome Remote Desktop..."
+echo "Setting up Chrome Remote Desktop"
+echo "Installing Chrome Remote Desktop"
 wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
-sudo dpkg -i chrome-remote-desktop_current_amd64.deb || sudo apt install -f -y
-echo "exec startplasma-x11" | sudo tee /etc/chrome-remote-desktop-session
+sudo dpkg --install chrome-remote-desktop_current_amd64.deb
+sudo apt install --assume-yes --fix-broken
 
-# Configure Chrome Remote Desktop
-echo "Configuring Chrome Remote Desktop..."
-sudo adduser "$username" chrome-remote-desktop
+echo "Installing Desktop Environment"
+export DEBIAN_FRONTEND=noninteractive
+sudo apt install --assume-yes gnome-core gnome-terminal
+echo "exec /usr/bin/gnome-session" | sudo tee /etc/chrome-remote-desktop-session
+sudo apt remove --assume-yes xfce4-terminal
+sudo apt install --assume-yes xscreensaver
+sudo systemctl disable lightdm.service
 
-# Set up X11 virtual framebuffer
-echo "Setting up X11 virtual framebuffer (Xvfb)..."
-Xvfb :99 -screen 0 1920x1080x24 &
-export DISPLAY=:99
-
-# Start KDE Plasma desktop environment
-echo "Starting KDE Plasma Desktop Environment..."
-startplasma-x11 &
+echo "Installing Google Chrome"
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg --install google-chrome-stable_current_amd64.deb
+sudo apt install --assume-yes --fix-broken
 
 # Prompt user for CRP value
-read -p "Enter your Chrome Remote Desktop authentication code: " CRP
+read -p "Enter CRP value: " CRP
 
-# Finalize CRD setup
-echo "Finalizing Chrome Remote Desktop setup..."
-su - "$username" -c "/opt/google/chrome-remote-desktop/start-host --code=\"$CRP\" --redirect-url=\"https://remotedesktop.google.com/_/oauthredirect\" --name=$(hostname) --pin=$Pin"
+echo "Finalizing"
+if [ "$Autostart" = true ]; then
+    mkdir -p "/home/$username/.config/autostart"
+    link="https://youtu.be/d9ui27vVePY?si=TfVDVQOd0VHjUt_b"
+    colab_autostart="[Desktop Entry]\nType=Application\nName=Colab\nExec=sh -c 'sensible-browser $link'\nIcon=\nComment=Open a predefined notebook at session signin.\nX-GNOME-Autostart-enabled=true"
+    echo -e "$colab_autostart" | sudo tee "/home/$username/.config/autostart/colab.desktop"
+    sudo chmod +x "/home/$username/.config/autostart/colab.desktop"
+    sudo chown "$username:$username" "/home/$username/.config"
+fi
 
-# Restart CRD service
-echo "Restarting Chrome Remote Desktop service..."
-sudo service chrome-remote-desktop restart
+sudo adduser "$username" chrome-remote-desktop
+command="$CRP --pin=$Pin"
+sudo su - "$username" -c "$command"
+sudo service chrome-remote-desktop start
 
-echo "Setup complete! You can now connect using Chrome Remote Desktop."
+echo "Finished Successfully"
 while true; do sleep 10; done
