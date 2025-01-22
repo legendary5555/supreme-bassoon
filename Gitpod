@@ -1,65 +1,54 @@
 #!/bin/bash
 
-# Set default username and password
+# Set default values
 username="user"
 password="root"
+chrome_remote_desktop_url="https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb"
+chrome_url="https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
 
-# Set default CRP value
-CRP=""
+# Function to log messages
+log() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
+}
 
-# Set default Pin value
-Pin="123456"
+# Function to install packages
+install_package() {
+    package_url=$1
+    log "Downloading $package_url"
+    wget -q --show-progress "$package_url"
+    log "Installing $(basename $package_url)"
+    sudo dpkg --install $(basename $package_url)
+    log "Fixing broken dependencies"
+    sudo apt-get install --fix-broken -y
+    rm $(basename $package_url)
+}
 
-# Set default Autostart value
-Autostart=true
+# Installation steps
+log "Starting installation"
 
-echo "Creating User and Setting it up"
+# Create user
+log "Creating user '$username'"
 sudo useradd -m "$username"
-sudo adduser "$username" sudo
 echo "$username:$password" | sudo chpasswd
 sudo sed -i 's/\/bin\/sh/\/bin\/bash/g' /etc/passwd
-echo "User created and configured with username '$username' and password '$password'"
 
-echo "Installing necessary packages"
-sudo apt update
-sudo apt install -y gnome-core gnome-terminal tightvncserver wget
+# Install Chrome Remote Desktop
+install_package "$chrome_remote_desktop_url"
 
-echo "Setting up Chrome Remote Desktop"
-echo "Installing Chrome Remote Desktop"
-wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
-sudo dpkg --install chrome-remote-desktop_current_amd64.deb
-sudo apt install --assume-yes --fix-broken
+# Install XFCE desktop environment
+log "Installing XFCE desktop environment"
+sudo DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes -y xfce4 desktop-base dbus-x11 xscreensaver
 
-echo "Installing Desktop Environment"
-export DEBIAN_FRONTEND=noninteractive
-sudo apt install --assume-yes gnome-core gnome-terminal
-echo "exec /usr/bin/gnome-session" | sudo tee /etc/chrome-remote-desktop-session
-sudo apt remove --assume-yes xfce4-terminal
-sudo apt install --assume-yes xscreensaver
+# Set up Chrome Remote Desktop session
+log "Setting up Chrome Remote Desktop session"
+sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
+
+# Disable lightdm service
+log "Disabling lightdm service"
 sudo systemctl disable lightdm.service
 
-echo "Installing Google Chrome"
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg --install google-chrome-stable_current_amd64.deb
-sudo apt install --assume-yes --fix-broken
+# Install Google Chrome
+log "Installing Google Chrome"
+install_package "$chrome_url"
 
-# Prompt user for CRP value
-read -p "Enter CRP value: " CRP
-
-echo "Finalizing"
-if [ "$Autostart" = true ]; then
-    mkdir -p "/home/$username/.config/autostart"
-    link="https://youtu.be/d9ui27vVePY?si=TfVDVQOd0VHjUt_b"
-    colab_autostart="[Desktop Entry]\nType=Application\nName=Colab\nExec=sh -c 'sensible-browser $link'\nIcon=\nComment=Open a predefined notebook at session signin.\nX-GNOME-Autostart-enabled=true"
-    echo -e "$colab_autostart" | sudo tee "/home/$username/.config/autostart/colab.desktop"
-    sudo chmod +x "/home/$username/.config/autostart/colab.desktop"
-    sudo chown "$username:$username" "/home/$username/.config"
-fi
-
-sudo adduser "$username" chrome-remote-desktop
-command="$CRP --pin=$Pin"
-sudo su - "$username" -c "$command"
-sudo service chrome-remote-desktop start
-
-echo "Finished Successfully"
-while true; do sleep 10; done
+log "Installation completed successfully"
